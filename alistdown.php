@@ -5,6 +5,8 @@ $alist_url='https://www.xxx.com';
 $Username = 'admin';
 // alist密码
 $Password = 'admin123456';
+// alist后台令牌
+$alisttoken = "alist-66a103dc";
 
 function alist_post($url,$paras ){
     $host = $url;
@@ -28,23 +30,29 @@ function alist_post($url,$paras ){
     curl_setopt($curl, CURLOPT_POSTFIELDS, $bodys);
     return curl_exec($curl);
 }
-
-//获取token
-$token=alist_post($alist_url."/api/auth/login","Password=".$Password."&Username=".$Username);
-$token=json_decode($token,true)['data']['token'];
-
 //接收post参数。
 $path = $_GET["d"];
 $password = $_GET["p"];
+//获取token
+if(empty($alisttoken)){
+    $token = alist_post($alist_url."/api/auth/login","Password=".$Password."&Username=".$Username);
+    $token = json_decode($token,true)['data']['token'];
+    
+}else{
+    $token = $alisttoken;
+}
+
+
 if(empty($path)){
     print_r("文件路径不能空");
 }else{
     $path=urlencode($path);
-$raw_url=alist_post($alist_url."/api/fs/get","Authorization=".$token."&password=".$password."&path=".$path);
+$raw_url=alist_post($alist_url."/api/fs/get","Authorization=".$token."&password=".$password."&path=".$path."&refresh=true");
+    // echo $raw_url;
 $code=json_decode($raw_url,true)['message'];
-if ($code == 'password is incorrect or you have no permission') {
-    print_r("缺失密码参数");
-}elseif ($code="success") {
+if ($code !== "success") {
+    echo $raw_url;
+}else {
     $raw_url=json_decode($raw_url,true)['data']['raw_url'];
     Header( "HTTP/1.1 301 Moved Permanently" );
     Header("Location:$raw_url"); 
